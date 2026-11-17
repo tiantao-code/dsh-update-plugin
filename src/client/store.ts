@@ -143,8 +143,10 @@ export class UpdateStore {
     try {
       const status = await this.call('status')
       const previous = this.snapshot.status
-      const transition = !previous || previous.id !== status.id || previous.phase !== status.phase
+      const newRun = Boolean(previous && previous.id !== status.id)
+      const transition = !previous || newRun || previous.phase !== status.phase
       const active = ACTIVE.has(status.phase) || status.phase === 'installed'
+      if (newRun) this.logOffset = 0
       let step = this.snapshot.step
       if (transition) {
         if (TERMINAL.has(status.phase)) step = 'result'
@@ -157,6 +159,7 @@ export class UpdateStore {
         target: status.target || this.snapshot.target,
         pauseReport: status.pauseReport ?? this.snapshot.pauseReport,
         error: status.error?.message ?? this.snapshot.error,
+        ...(newRun ? { log: '' } : {}),
       })
       if (active && status.id) await this.loadLogs(status)
     } finally {
@@ -319,8 +322,14 @@ export class UpdateStore {
     if (!pluginManager?.setBundleEnabled) return
     this.patch({ busy: `disable:${name}`, error: null })
     try {
-      const result = await pluginManager.setBundleEnabled(name, false)
-      if (result && result.ok === false) throw new Error(result.error?.message ?? 'disable failed')
+      const response = await pluginManager.setBundleEnabled(name, false)
+      if (!response || response.ok === false) {
+        throw new Error(response?.error?.message ?? 'disable failed')
+      }
+      const change = response.value
+      if (change && change.application === 'failed') {
+        throw new Error(change.error?.message ?? 'disable failed')
+      }
       this.patch({ plan: await this.replan() })
     } catch (error) {
       this.patch({ error: messageOf(error) })
@@ -359,6 +368,12 @@ function unwrap<T>(result: unknown): T {
 }
 
 function defaultTarget(result: CheckResult, previous: string): string {
+  const byVersion = new Map(result.versions.map(candidate => [candidate.version, candidate]))
+  for (const version of [result.latest.rc, result.latest.alpha]) {
+    if (!version) continue
+    const candidate = byVersion.get(version)
+    if (candidate?.selectable && candidate.relation !== 'older') return candidate.version
+  }
   const preferred =
     result.versions.find(candidate => candidate.selectable && candidate.relation === 'newer') ??
     result.versions.find(candidate => candidate.selectable && candidate.relation === 'same')

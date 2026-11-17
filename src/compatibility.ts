@@ -20,6 +20,7 @@ interface PackageManifest {
   dsh?: {
     manifestVersion?: number
     bundle?: { patch?: string | string[] }
+    profile?: { bundles?: string[] }
     client?: { platform?: string }
   }
   engines?: { dsh?: string; node?: string }

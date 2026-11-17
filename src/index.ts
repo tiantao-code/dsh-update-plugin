@@ -99,7 +99,7 @@ class UpdateFailure extends Error {
  * only reads status and polls it; custom host events cannot be forwarded
  * through the gateway for third-party packages, so polling is the transport.
  */
-export class UpdateService extends TypertRemoteService {
+class UpdateService extends TypertRemoteService {
   static inject = ['sessionController']
 
   static Config = Config
@@ -122,19 +122,27 @@ export class UpdateService extends TypertRemoteService {
   private disposed = false
   private persistedStageRoot: string | undefined
 
-  constructor(ctx: any, config: UpdateConfig) {
+  constructor(ctx: any, config?: Partial<UpdateConfig>) {
     super(ctx, 'dshUpdate')
+    // Cordis applies `static Config` when the plugin is mounted through the
+    // loader, but tests and direct construction may pass nothing at all.
     this.config = {
-      ...config,
-      registry: normalizeRegistry(config.registry),
-      fallbackRegistries: config.fallbackRegistries.map(normalizeRegistry),
+      registry: normalizeRegistry(config?.registry ?? DEFAULT_REGISTRY),
+      fallbackRegistries: (config?.fallbackRegistries ?? [FALLBACK_REGISTRY]).map(
+        normalizeRegistry,
+      ),
+      checkIntervalMinutes: config?.checkIntervalMinutes ?? 360,
+      pauseTimeoutMs: config?.pauseTimeoutMs ?? 15_000,
+      allowIncompatiblePlugins: config?.allowIncompatiblePlugins ?? false,
+      allowDowngrade: config?.allowDowngrade ?? true,
+      allowBuildScripts: config?.allowBuildScripts ?? false,
     }
     this.logger = ctx.logger?.('dsh-update') ?? {
       info: () => undefined,
       warn: () => undefined,
       error: () => undefined,
     }
-    const home = resolveDshHome(ctx.profileContext?.home)
+    const home = resolveDshHome(profileOf(ctx)?.home)
     this.store = new UpdateStore(home)
     this.ready = this.bootstrap().catch(error => {
       this.logger.error?.('dsh-update bootstrap failed', error)
@@ -149,7 +157,6 @@ export class UpdateService extends TypertRemoteService {
 
   // ---------------------------------------------------------------- Remote API
 
-  @Remote
   async check(request?: CheckRequest): Promise<CheckResult> {
     await this.ready
     if (this.run) {
@@ -203,7 +210,6 @@ export class UpdateService extends TypertRemoteService {
     }
   }
 
-  @Remote
   async plan(target: string): Promise<UpdatePlan> {
     await this.ready
     this.assertNotBusy()
@@ -226,7 +232,6 @@ export class UpdateService extends TypertRemoteService {
     return plan
   }
 
-  @Remote
   async pause(request: PauseRequest): Promise<PauseReport> {
     await this.ready
     if (!Array.isArray(request?.sessionIds)) {
@@ -262,7 +267,6 @@ export class UpdateService extends TypertRemoteService {
     return report
   }
 
-  @Remote
   async start(request: StartRequest): Promise<StartResult> {
     await this.ready
     this.assertNotBusy()
@@ -369,13 +373,11 @@ export class UpdateService extends TypertRemoteService {
     return { id }
   }
 
-  @Remote
   async status(): Promise<UpdateStatus> {
     await this.ready
     return this.copyStatus()
   }
 
-  @Remote
   async cancel(id: string): Promise<UpdateStatus> {
     await this.ready
     if (!this.run) {
@@ -424,7 +426,6 @@ export class UpdateService extends TypertRemoteService {
     return this.copyStatus()
   }
 
-  @Remote
   async logs(request: LogsRequest): Promise<LogsResult> {
     await this.ready
     if (!request || typeof request.id !== 'string') {
@@ -447,7 +448,7 @@ export class UpdateService extends TypertRemoteService {
   private async bootstrap(): Promise<void> {
     await this.store.ensure()
     this.installation = await detectInstallation({
-      profileHome: (this.ctx as any).profileContext?.home,
+      profileHome: profileOf(this.ctx)?.home,
     })
     const previous = await this.currentVersion()
     this.current = {
@@ -474,7 +475,7 @@ export class UpdateService extends TypertRemoteService {
     const status = stateToStatus(saved)
     this.persistedStageRoot = saved.stageRoot
     this.installation = await detectInstallation({
-      profileHome: (this.ctx as any).profileContext?.home,
+      profileHome: profileOf(this.ctx)?.home,
     })
     // `currentVersion()` masks a missing package as 0.0.0-0; recovery must see
     // the real absence to know whether it should restore a backup.
@@ -681,7 +682,7 @@ export class UpdateService extends TypertRemoteService {
   private async preflight(run: RunState, paused: ReadonlySet<string>): Promise<void> {
     this.setProgress('preflight', 60, '切换前检查安装目录和会话活动')
 
-    const fresh = await detectInstallation({ profileHome: (this.ctx as any).profileContext?.home })
+    const fresh = await detectInstallation({ profileHome: profileOf(this.ctx)?.home })
     if (!fresh.packageRoot || fresh.packageRoot !== this.installation?.packageRoot) {
       throw new UpdateFailure('INSTALL_CHANGED', '安装目录在更新期间发生变化，已停止切换')
     }
@@ -773,12 +774,12 @@ export class UpdateService extends TypertRemoteService {
     target: string,
     candidate: VersionCandidate,
   ): Promise<UpdatePlan> {
-    this.installation = await detectInstallation({ profileHome: (this.ctx as any).profileContext?.home })
+    this.installation = await detectInstallation({ profileHome: profileOf(this.ctx)?.home })
     const compatibility: CompatibilityReport = await checkCompatibility({
       target,
       candidate,
       installation: this.installation,
-      profileDir: (this.ctx as any).profileContext?.dir,
+      profileDir: profileOf(this.ctx)?.dir,
       config: this.config,
     })
 
@@ -837,7 +838,7 @@ export class UpdateService extends TypertRemoteService {
   private async currentVersion(): Promise<string> {
     if (!this.installation?.packageRoot) {
       this.installation = await detectInstallation({
-        profileHome: (this.ctx as any).profileContext?.home,
+        profileHome: profileOf(this.ctx)?.home,
       })
     }
     const version = await readInstalledVersion(this.installation?.packageRoot ?? '')
@@ -994,8 +995,34 @@ function asFailure(error: unknown): UpdateError {
   return { code: 'INTERNAL', message: messageOf(error) }
 }
 
+function profileOf(ctx: any): any {
+  // `profileContext` is not present in every embedding (tests, bare Cordis).
+  // Use the reflection getter so a missing service is undefined, not a proxy error.
+  return typeof ctx?.get === 'function' ? ctx.get('profileContext') : ctx?.profileContext
+}
+
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+
+/**
+ * `@Remote` is a stage-3 decorator. tsdown/rolldown leaves decorator syntax in
+ * the bundle, so mark the methods explicitly with the same protocol helper.
+ * This keeps the Host artifact plain ESM that Node can load without a
+ * decorator transform.
+ */
+for (const name of ['check', 'plan', 'pause', 'start', 'status', 'cancel', 'logs'] as const) {
+  const method = (UpdateService.prototype as unknown as Record<string, unknown>)[name]
+  ;(Remote as any)(method, {
+    name,
+    kind: 'method',
+    private: false,
+    static: false,
+    addInitializer(initialize: () => void) {
+      initialize.call(Object.create(UpdateService.prototype))
+    },
+  })
 }
 
 export { UpdateService }

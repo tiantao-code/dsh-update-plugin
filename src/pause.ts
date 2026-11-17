@@ -151,8 +151,11 @@ export async function findUnpausedActivity(
 ): Promise<string[]> {
   const work = await listSessionWork(ctx)
   return work
-    .filter(session => !paused.has(session.sessionId))
-    .filter(session => session.running || session.activities.length > 0)
+    .filter(
+      session =>
+        session.activities.length > 0 ||
+        (session.running && !paused.has(session.sessionId)),
+    )
     .map(session => session.sessionId)
 }
 

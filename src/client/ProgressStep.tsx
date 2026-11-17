@@ -62,7 +62,7 @@ export function ProgressStep() {
             <div>{t('pauseTimeout')}</div>
             <p className="dshu-note">{t('pauseTimeoutHint')}</p>
             <div className="dshu-actions" style={{ marginTop: 8 }}>
-              <Button disabled={state.busy !== null} onClick={() => void store.start(false)}>{t('continueWaiting')}</Button>
+              <Button disabled={state.busy !== null} onClick={() => void store.start()}>{t('continueWaiting')}</Button>
               <Button kind="danger" disabled={state.busy !== null} onClick={() => void store.resumeWithRisk()}>{t('skipAndContinue')}</Button>
               <Button disabled={state.busy !== null} onClick={() => void store.cancel()}>{t('cancel')}</Button>
             </div>
@@ -70,9 +70,9 @@ export function ProgressStep() {
         ) : null}
         {status.phase === 'installed' || status.phase === 'done' ? (
           <div style={{ marginTop: 14 }}>
-            <div className="dshu-v">{t('installed')}</div>
-            <p className="dshu-note">{t('installedHint')}</p>
-            {status.restartCommand ? (
+            <div className="dshu-v">{status.phase === 'done' ? t('done') : t('installed')}</div>
+            <p className="dshu-note">{status.phase === 'done' ? t('doneHint') : t('installedHint')}</p>
+            {status.phase === 'installed' && status.restartCommand ? (
               <div style={{ marginTop: 10 }}>
                 <div className="dshu-k">{t('restartCommand')}</div>
                 <div className="dshu-code">{status.restartCommand}</div>
@@ -143,8 +143,8 @@ function phaseTitle(phase: string, t: (key: LocaleKey) => string): string {
     case 'pausing': return t('pausing')
     case 'paused': return t('pausing')
     case 'switching': return t('switching')
-    case 'installed':
-    case 'done': return t('installed')
+    case 'installed': return t('installed')
+    case 'done': return t('done')
     case 'failed': return t('failed')
     case 'rolled-back': return t('rolledBack')
     default: return phase
@@ -155,8 +155,8 @@ function phaseHint(phase: string, t: (key: LocaleKey) => string): string {
   switch (phase) {
     case 'staging': return t('stagingHint')
     case 'switching': return t('switchingHint')
-    case 'installed':
-    case 'done': return t('installedHint')
+    case 'installed': return t('installedHint')
+    case 'done': return t('doneHint')
     default: return ''
   }
 }

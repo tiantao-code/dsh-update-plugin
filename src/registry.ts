@@ -121,7 +121,7 @@ export function latestByChannel(versions: VersionCandidate[]): CheckResult['late
   const latest: CheckResult['latest'] = {}
   for (const candidate of versions) {
     const current = latest[candidate.channel]
-    if (!current || semver.rcompare(candidate.version, current) > 0) {
+    if (!current || semver.compare(candidate.version, current) > 0) {
       latest[candidate.channel] = candidate.version
     }
   }

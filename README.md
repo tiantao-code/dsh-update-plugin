@@ -6,19 +6,26 @@ DSH 版本更新插件：检查新的 **RC / Alpha** 版本、预检兼容性、
 
 ## 状态
 
-代码按 `dsh-update-plugin-design.md` 实现，**尚未运行安装/构建/调试**。首次使用前请先完成：
+代码按 `dsh-update-plugin-design.md` 实现，并已在本机完成构建、类型检查和端到端验证：
+
+- `npm install`、`npm run build`（`rimraf lib && tsdown && tsc`）、`npx tsc --noEmit` 通过。
+- 在临时 DSH profile 中通过 `dsh plugin add link:` 安装后，`dsh --profile <name> --dump-config` 能看到自插入的 `dsh-update` entry，Web 页面 boot 数据包含本插件 client bundle。
+- 使用伪造安装前缀实际执行过 staged 安装 `@deepseek-ai/dsh@0.2.2-rc.3`、原子切换、备份与重启恢复；`cancel`、暂停/超时、registry fallback 与 ETag 缓存也已覆盖。
+- 尚未做真实浏览器中的人工点击回归；UI 通过 vm + mock 验证了挂载与 slot 注册。
+
+构建：
 
 ```bash
-pnpm install     # 或 npm install
-pnpm build       # rimraf lib && tsdown && tsc
+npm install
+npm run build
 npm pack
 ```
 
-本机若没有 `pnpm`，用 npm 等价命令即可。构建需要 `tsdown`、`typescript`、`@types/*` 等 devDependencies。
+若 `~/.npm` 有权限问题，可改用 `npm install --cache .npm-cache`。
 
 ## 安装
 
-包名当前是占位 scope：`@your-scope/dsh-update`。发布或本地安装前请把 `package.json`、`cordis.patch.yml`、`tsdown.config.ts`、`src/typert/spec.ts` 中的 `@your-scope/dsh-update` 替换为实际包名（**四处必须一致**：`TYPERT.package` 必须等于自身包名，否则 typert loader 会拒绝；Client bundle 的 `__ModuleLoader__.load({ id })` 也使用包名）。
+包名已统一为 `@tiantao-code/dsh-update`。`package.json`、`cordis.patch.yml`、`tsdown.config.ts`、`src/typert/spec.ts`、`src/client/index.tsx` 中的包名必须保持一致：`TYPERT.package` 必须等于自身包名，否则 typert loader 会拒绝；Client bundle 的 `__ModuleLoader__.load({ id })` 也使用包名。
 
 本地 link 安装：
 
@@ -30,7 +37,7 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-update-plugin
 
 ```bash
 npm pack
-dsh plugin --profile web add ./your-scope-dsh-update-0.1.0.tgz
+dsh plugin --profile web add ./tiantao-code-dsh-update-0.1.0.tgz
 ```
 
 安装后重启 DSH（本插件不会自动重启）：
@@ -45,10 +52,10 @@ dsh web --port 3080
 
 1. **版本**：读取 npm registry 的 `@deepseek-ai/dsh` packument，只显示 `rc` / `alpha` 预发布版本。`latest` 只是 npm dist-tag 角标，不代表稳定版；最高版本按 SemVer 排序而不是发布时间。
 2. **兼容性**：检查目标版本的 `engines.node`、当前安装方式是否可写、磁盘空间，以及已装 bundle 声明的 `engines.dsh` / `peerDependencies["@deepseek-ai/dsh"]`。不兼容插件可在列表里直接禁用（写入 profile patch），不会卸载。
-3. **会话**：列出有活动（turn/job/subagent/schedule）的会话，默认全选。可选择暂停选中会话，或明确接受风险后不暂停。
+3. **会话**：列出有活动（turn/job/subagent/schedule）的会话，默认全选；这里只做选择，实际暂停在下载完成后、切换前执行。取消勾选表示跳过这些会话，需要明确接受风险。
 4. **确认**：勾选“理解需要手动重启”，开始更新。
 5. **执行**：staging → 暂停 → 切换前重扫 → 原子 rename 切换。安装失败不会动当前版本；切换失败自动回滚。
-6. **结果**：页面会断开。复制页面上的重启命令，在终端重启 DSH，然后刷新页面。新版本启动后重新打开面板会显示完成状态。
+6. **结果**：切换成功后页面会断开。复制页面上的重启命令，在终端重启 DSH，然后刷新页面；重启后 Host 会验证版本并把 `installed` 转为 `done`。
 
 ### 暂停语义
 
@@ -114,4 +121,4 @@ cordis.patch.yml         bundle 自插入 patch
 - 切换后旧页面仍可能持有旧模块；在重启前不要继续操作该页面。
 - 只对当前 profile / 当前进程做 best-effort 会话暂停；其它 profile 或其它 DSH 进程只提示，不承诺暂停。
 - 声明式兼容性检查不能保证插件一定启动；不兼容列表是预检结果，不是运行时保证。
-- 首次实现未运行测试；`pnpm typecheck` / `pnpm build` 需要在有 devDependencies 的环境执行。
+- 真实浏览器交互回归尚未自动化；发布前建议在目标 DSH 版本上手动走一遍向导。

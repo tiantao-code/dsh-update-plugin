@@ -1,5 +1,5 @@
 {
-  "name": "@your-scope/dsh-update",
+  "name": "@tiantao-code/dsh-update",
   "version": "0.1.0",
   "description": "DSH 版本更新：版本检查、兼容性预检、会话暂停、staged 安装与手动重启",
   "license": "MIT",
@@ -33,6 +33,7 @@
     "lib/client.js",
     "lib/typert.host.js",
     "lib/typert.remote-client.js",
+    "lib/*.js",
     "lib/types/**/*.d.ts",
     "cordis.patch.yml",
     "locale/*.json",

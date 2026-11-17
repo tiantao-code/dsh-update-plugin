@@ -87,12 +87,7 @@ export function SessionStep() {
       <div className="dshu-actions">
         <Button onClick={() => store.back()}>{t('back')}</Button>
         {sessions.length > 0 ? (
-          <Button
-            disabled={selected.size === 0 || state.busy !== null}
-            onClick={() => void store.pauseNow()}
-          >
-            {state.busy === 'pausing' ? t('pausing') : t('pauseSelected')}
-          </Button>
+          <span className="dshu-note">{t('pauseAfterDownload')}</span>
         ) : null}
         <Button
           kind="primary"

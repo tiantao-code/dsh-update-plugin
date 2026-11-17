@@ -9,10 +9,18 @@ export const CSS = `
   --dshu-radius: 10px;
   color: inherit;
   font: inherit;
-  padding: 24px 28px 40px;
+  padding: 24px 28px 96px;
+  width: 100%;
   max-width: 980px;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   margin: 0 auto;
+  flex: 1 1 auto;
   box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .dshu-root * { box-sizing: border-box; }
 .dshu-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
@@ -28,7 +36,7 @@ export const CSS = `
 .dshu-kv { display: flex; flex-direction: column; gap: 2px; }
 .dshu-k { color: var(--dshu-muted); font-size: 12px; }
 .dshu-v { font-size: 14px; font-weight: 550; word-break: break-all; }
-.dshu-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
+.dshu-actions { position: sticky; bottom: 0; z-index: 2; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; padding: 12px 0 4px; border-top: 1px solid var(--dshu-border); background: var(--dsw-alias-bg-base, var(--dsw-surface, transparent)); }
 .dshu-btn { appearance: none; border: 1px solid var(--dshu-border); background: transparent; color: inherit; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer; }
 .dshu-btn:hover:not(:disabled) { border-color: var(--dshu-accent); }
 .dshu-btn:disabled { opacity: .45; cursor: not-allowed; }

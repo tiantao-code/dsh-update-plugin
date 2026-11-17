@@ -243,9 +243,9 @@ export async function switchInstallation(options: SwitchOptions): Promise<string
     let restored = true
     await rename(backup, options.packageRoot).catch(restoreError => {
       restored = false
-      options.onLog(
+      void options.onLog(
         `恢复备份失败：${messageOf(restoreError)}；备份仍保留在 ${backup}`,
-      ).catch(() => undefined)
+      )
     })
     throw new SwitchError(
       `切换失败：${messageOf(error)}${restored ? '（已恢复原版本）' : '（请手动恢复备份）'}`,

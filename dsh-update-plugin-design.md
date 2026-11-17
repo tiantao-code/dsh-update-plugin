@@ -106,7 +106,7 @@ dsh-update/
 
 ```json
 {
-  "name": "@your-scope/dsh-update",
+  "name": "@tiantao-code/dsh-update",
   "version": "0.1.0",
   "type": "module",
   "description": "Check and install DSH RC/Alpha updates from the Web UI.",
@@ -171,7 +171,7 @@ dsh-update/
 # cordis.patch.yml
 - insert:
     - id: dsh-update
-      name: '@your-scope/dsh-update'
+      name: '@tiantao-code/dsh-update'
 ```
 
 这一行是 Host 入口。客户端模块系统会在同一个 Loader entry 上读到该包的 `dsh.client`，并加载 `./client`。因此：
@@ -204,7 +204,7 @@ M0 必须实际验证一次“自引用 patch + 同包双面”能同时加载 H
 └────────────────────────────────┬──────────────────────────────────────┘
                                  │ Typert Remote
 ┌────────────────────────────────▼──────────────────────────────────────┐
-│ Host: @your-scope/dsh-update（ctx.dshUpdate）                         │
+│ Host: @tiantao-code/dsh-update（ctx.dshUpdate）                         │
 │                                                                        │
 │  VersionService       registry 拉取、RC/Alpha 选择、缓存               │
 │  CompatibilityGuard   Node / 插件 / manifest / Session 格式            │
@@ -1202,7 +1202,7 @@ HMR：
 
 ### 12.6 发布（第三方）
 
-- 包名用自有 scope，例如 `@your-scope/dsh-update`；不要使用 `@deepseek-ai`。
+- 包名使用 `@tiantao-code/dsh-update`；不要使用 `@deepseek-ai`。
 - `engines.dsh` 写兼容范围；README 写清支持矩阵：Web、npm 全局、macOS/Linux。
 - `files` 包含 `lib`、`cordis.patch.yml`、`locale`。
 - 发布前 `npm pack` 检查 `./client`、`./cordis.patch.yml`、locale 是否齐全。
@@ -1317,7 +1317,7 @@ HMR：
 
 ### 仍需确认
 
-1. 包名/scope 用哪个？`@your-scope/dsh-update` 只是占位。
+1. 包名/scope：已定为 `@tiantao-code/dsh-update`。
 2. 插件安装后默认启用，还是让用户在 Plugins 页面手动启用？
 3. 是否需要发布到 npm 之外的渠道（GitHub Release / 内部 registry）？
 4. 首版是否要支持 Windows？如果不支持，README 明确写。

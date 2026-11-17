@@ -48,10 +48,14 @@ export default defineConfig([
     target: 'es2022',
     sourcemap: true,
     dts: false,
+    outExtensions: () => ({ js: '.js' }),
     external: ['react', 'react-dom', 'react/jsx-runtime', 'zod'],
+    // Not a DSH client seed module: inline the protocol helper so the browser
+    // never has to resolve it through the module loader.
+    noExternal: [/^@deepseek-ai\/dsh-typert-protocol/],
     outputOptions: {
       banner:
-        'window.__ModuleLoader__.load({ id: "@your-scope/dsh-update", factory: (require) => { var module = { exports: {} }; var exports = module.exports; Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });',
+        'window.__ModuleLoader__.load({ id: "@tiantao-code/dsh-update", factory: (require) => { var module = { exports: {} }; var exports = module.exports; Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });',
       footer: 'return module.exports; } });',
     },
   },

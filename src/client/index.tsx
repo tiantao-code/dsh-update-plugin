@@ -15,7 +15,7 @@ export const inject = ['remote', 'slots', 'locale']
 export async function apply(ctx: any): Promise<void> {
   const style = document.createElement('style')
   style.textContent = CSS
-  style.dataset.plugin = '@your-scope/dsh-update'
+  style.dataset.plugin = '@tiantao-code/dsh-update'
   document.head.append(style)
   ctx.effect(() => () => style.remove(), 'dsh-update: styles')
 

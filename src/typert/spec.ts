@@ -8,7 +8,7 @@
  */
 import { z } from 'zod'
 
-export const PACKAGE_NAME = '@your-scope/dsh-update'
+export const PACKAGE_NAME = '@tiantao-code/dsh-update'
 export const SERVICE_NAME = 'dshUpdate'
 
 const sourceLocation = (line: number) => ({
@@ -31,14 +31,16 @@ const requestParameter = (
   create: () => z.ZodType,
   description: string,
   acceptsUndefined = false,
-) => ({
-  name,
-  description,
-  source: 'json' as const,
-  ...(acceptsUndefined ? { acceptsUndefined: true } : {}),
-  codec: jsonCodec(typeSymbol, create, description),
-  strictCodec: jsonCodec(typeSymbol, create, description),
-})
+) => {
+  const base = {
+    name,
+    description,
+    source: 'json' as const,
+    codec: jsonCodec(typeSymbol, create, description),
+    strictCodec: jsonCodec(typeSymbol, create, description),
+  }
+  return acceptsUndefined ? { ...base, acceptsUndefined: true as const } : base
+}
 
 const result = (name: string, description: string) => ({
   mode: 'strict' as const,

@@ -1,0 +1,82 @@
+{
+  "name": "@your-scope/dsh-update",
+  "version": "0.1.0",
+  "description": "DSH 版本更新：版本检查、兼容性预检、会话暂停、staged 安装与手动重启",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "dsh": ">=0.2.1-0 <0.3.0",
+    "node": ">=24.9.0"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./typert": {
+      "default": "./lib/typert.host.js"
+    },
+    "./remote": {
+      "default": "./lib/typert.remote-client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/typert.host.js",
+    "lib/typert.remote-client.js",
+    "lib/types/**/*.d.ts",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "README.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "rimraf lib && tsdown && tsc",
+    "typecheck": "tsc --noEmit",
+    "pack:check": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-atomic-write": "^0.2.1-0",
+    "@deepseek-ai/dsh-home-paths": "^0.2.1-0",
+    "@deepseek-ai/dsh-typert-protocol": "^0.2.1-0",
+    "@deepseek-ai/schemastery": "^3.18.5",
+    "semver": "^7.7.2",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/semver": "^7.7.0",
+    "rimraf": "^6.0.0",
+    "tsdown": "^0.15.0",
+    "typescript": "^5.9.0"
+  }
+}
